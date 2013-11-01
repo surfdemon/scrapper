@@ -57,8 +57,6 @@ class mainScreen(QtGui.QWidget):
         self.urlLbl.setText(self.urlTxt.text())
         site = self.urlTxt.text()
         self.check(site)
-        print "internalUrls", internalUrls
-        print "externalUrls", externalUrls
         for internalUrl in internalUrls:
             print internalUrl
             print "number of urls in visited:", len(visitedUrls)
@@ -71,10 +69,9 @@ class mainScreen(QtGui.QWidget):
         global visitedUrls
         h = httplib2.Http(".cache")
         h.force_exception_to_status_code = True
-        resp, content = h.request(webpage, "GET")
+        resp, content = h.request(str(webpage), "GET")
         parser = MyHTMLParser()
         print "site is ", site
-        print content
         try:
             parser.feed(content)
         except:

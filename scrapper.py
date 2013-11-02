@@ -3,26 +3,25 @@ from PyQt4 import QtGui, QtCore
 import httplib2
 from HTMLParser import HTMLParser
 
-visitedUrls = []
-externalUrls = []
-internalUrls = []
-site = ""
+class lists():
+    visitedUrls = []
+    externalUrls = []
+    internalUrls = []
+    webpage = ""
 
-class MyHTMLParser(HTMLParser):
+class MyHTMLParser(HTMLParser, lists):
+
     def handle_starttag(self, tag, attrs):
-        global internalUrls
-        global externalUrls
-        global site
         for attr in attrs:
             if attr[0] == "href":
-                if site in attr[1]:
-                    if attr[1] not in internalUrls:
-                        internalUrls.append(attr[1])
-            else:
-                if attr[1] not in externalUrls:
-                    externalUrls.append(attr[1])
+                if self.webpage.replace('http://', '') in attr[1]:
+                    if attr[1] not in self.internalUrls:
+                        self.internalUrls.append(attr[1])
+                else:
+                    if attr[1] not in self.externalUrls:
+                        self.externalUrls.append(attr[1])
 
-class mainScreen(QtGui.QWidget):
+class mainScreen(QtGui.QWidget, lists):
     def __init__(self):
         super(mainScreen, self).__init__()
         self.initUI()
@@ -44,42 +43,18 @@ class mainScreen(QtGui.QWidget):
         grid.addWidget(self.txtExtUrl,1,0)
         grid.addWidget(self.txtIntUrl,1,1)
         grid.addWidget(self.txtVisitedUrl,2,0,1,2)
-
         self.setLayout(grid)
         self.btnTest.clicked.connect(self.buttonClicked)
 
     def buttonClicked(self):
-        global internalUrls
-        global externalUrls
-        global visitedUrls
-        global site
         print self.urlTxt.text()
         self.urlLbl.setText(self.urlTxt.text())
         site = self.urlTxt.text()
-        self.check(site)
-        for internalUrl in internalUrls:
-            print internalUrl
-            print "number of urls in visited:", len(visitedUrls)
-            print "number of internal urls:", len(internalUrls)
-            print "number of external urls:", len(externalUrls)
-            if internalUrl not in visitedUrls:
-                self.check( internalUrl)
+        checker = siteChecker()
+        checker.setSite(site)
+        checker.startScrape()
 
-    def check(self, webpage):
-        global visitedUrls
-        h = httplib2.Http(".cache")
-        h.force_exception_to_status_code = True
-        resp, content = h.request(str(webpage), "GET")
-        parser = MyHTMLParser()
-        print "site is ", site
-        try:
-            parser.feed(content)
-        except:
-            pass
-        visitedUrls.append(str(webpage))
-        print visitedUrls
-
-class siteScraper(QtGui.QMainWindow):
+class siteScraper(QtGui.QMainWindow, lists):
     def __init__(self):
         super(siteScraper, self).__init__()
         self.initUI()
@@ -113,6 +88,44 @@ class siteScraper(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+class siteChecker(mainScreen, lists):
+    def test(self, attr):
+        print "test has run", attr
+
+    def check(self):
+        h = httplib2.Http(".cache")
+        h.force_exception_to_status_code = True
+        resp, content = h.request(self.webpage, "GET")
+        print "resp is ", resp
+        parser = MyHTMLParser()
+        try:
+            result = parser.feed(content)
+            print "the result from feed in check function is ", result
+        except:
+            pass
+        self.visitedUrls.append(self.webpage)
+        print "here are the visited sites from in the check function ", self.visitedUrls
+        print "here are the internalUrls", self.internalUrls
+        print "here are the externalUrls", self.externalUrls
+
+    def setSite(self, webpage):
+        self.webpage = str(webpage)
+
+    def startScrape(self):
+        self.check()
+        for self.internalUrl in self.internalUrls:
+            print self.internalUrl
+            print "number of urls in visited:", len(self.visitedUrls)
+            print "number of internal urls:", len(self.internalUrls)
+            print "number of external urls:", len(self.externalUrls)
+            self.txtIntUrl.setText("test")            
+
+            if self.internalUrl not in self.visitedUrls:
+                self.webpage = self.internalUrl
+                self.check()
+
+
 
 def main():
     app = QtGui.QApplication(sys.argv)

@@ -2,6 +2,8 @@ import sys
 from PyQt4 import QtGui, QtCore
 import httplib2
 from HTMLParser import HTMLParser
+import Queue
+import threading
 
 class lists():
     visitedUrls = []
@@ -46,13 +48,23 @@ class mainScreen(QtGui.QWidget, lists):
         self.setLayout(grid)
         self.btnTest.clicked.connect(self.buttonClicked)
 
+    def updateTxtIntUrl(self, text):
+        print "the text is ", text
+        self.txtIntUrl.setText(str(text))
+
     def buttonClicked(self):
         print self.urlTxt.text()
         self.urlLbl.setText(self.urlTxt.text())
         site = self.urlTxt.text()
-        checker = siteChecker()
-        checker.setSite(site)
-        checker.startScrape()
+
+        self.checker = siteChecker()
+        self.checker.setSite(site)
+        self.connect(self.checker, QtCore.SIGNAL('txtIntUrl'), self.updateTxtIntUrl)
+        self.checker.start()
+        # q = Queue.Queue()
+        # t = threading.Thread(target = checker.startScrape(), args = (q))
+        # t.deamon = True
+        # t.start()
 
 class siteScraper(QtGui.QMainWindow, lists):
     def __init__(self):
@@ -89,7 +101,7 @@ class siteScraper(QtGui.QMainWindow, lists):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-class siteChecker(mainScreen, lists):
+class siteChecker(QtCore.QThread, QtCore.QObject, lists):
     def test(self, attr):
         print "test has run", attr
 
@@ -112,20 +124,19 @@ class siteChecker(mainScreen, lists):
     def setSite(self, webpage):
         self.webpage = str(webpage)
 
-    def startScrape(self):
+    def run(self):
         self.check()
         for self.internalUrl in self.internalUrls:
             print self.internalUrl
             print "number of urls in visited:", len(self.visitedUrls)
             print "number of internal urls:", len(self.internalUrls)
             print "number of external urls:", len(self.externalUrls)
-            self.txtIntUrl.setText("test")            
+            self.emit(QtCore.SIGNAL('txtIntUrl'), self.internalUrls)
+            #self.txtIntUrl.setText("test")            
 
             if self.internalUrl not in self.visitedUrls:
                 self.webpage = self.internalUrl
                 self.check()
-
-
 
 def main():
     app = QtGui.QApplication(sys.argv)

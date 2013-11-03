@@ -12,7 +12,6 @@ class lists():
     webpage = ""
 
 class MyHTMLParser(HTMLParser, lists):
-
     def handle_starttag(self, tag, attrs):
         for attr in attrs:
             if attr[0] == "href":
@@ -49,22 +48,28 @@ class mainScreen(QtGui.QWidget, lists):
         self.btnTest.clicked.connect(self.buttonClicked)
 
     def updateTxtIntUrl(self, text):
-        print "the text is ", text
+        print "the updateTxtIntUrl is ", text
         self.txtIntUrl.setText(str(text))
+
+
+    def updateTxtExtUrl(self, text):
+        print "the updateTxtExtUrl is ", text
+        self.txtExtUrl.setText(str(text))
+
+    def updateTxtVisitedUrl(self, text):
+        print "the upadetTxtVisitedUrl is ", text
+        self.txtVisitedUrl.setText(str(text))
 
     def buttonClicked(self):
         print self.urlTxt.text()
         self.urlLbl.setText(self.urlTxt.text())
         site = self.urlTxt.text()
-
         self.checker = siteChecker()
         self.checker.setSite(site)
         self.connect(self.checker, QtCore.SIGNAL('txtIntUrl'), self.updateTxtIntUrl)
+        self.connect(self.checker, QtCore.SIGNAL('txtExtUrl'), self.updateTxtExtUrl)
+        self.connect(self.checker, QtCore.SIGNAL('txtVisitedUrl'), self.updateTxtVisitedUrl)
         self.checker.start()
-        # q = Queue.Queue()
-        # t = threading.Thread(target = checker.startScrape(), args = (q))
-        # t.deamon = True
-        # t.start()
 
 class siteScraper(QtGui.QMainWindow, lists):
     def __init__(self):
@@ -132,6 +137,8 @@ class siteChecker(QtCore.QThread, QtCore.QObject, lists):
             print "number of internal urls:", len(self.internalUrls)
             print "number of external urls:", len(self.externalUrls)
             self.emit(QtCore.SIGNAL('txtIntUrl'), self.internalUrls)
+            self.emit(QtCore.SIGNAL('txtExtUrl'), self.externalUrls)
+            self.emit(QtCore.SIGNAL('txtVisitedUrl'), self.visitedUrls)
             #self.txtIntUrl.setText("test")            
 
             if self.internalUrl not in self.visitedUrls:

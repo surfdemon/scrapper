@@ -13,9 +13,10 @@ class lists():
 
 class MyHTMLParser(HTMLParser, lists):
     def handle_starttag(self, tag, attrs):
+        searchUrl = self.webpage.replace('http://www.', '')
         for attr in attrs:
             if attr[0] == "href":
-                if self.webpage.replace('http://', '') in attr[1]:
+                if searchUrl in attr[1]:
                     if attr[1] not in self.internalUrls:
                         self.internalUrls.append(attr[1])
                 else:
@@ -32,6 +33,7 @@ class mainScreen(QtGui.QWidget, lists):
         self.urlLbl = QtGui.QLabel('Site:', self)
         self.urlTxt = QtGui.QLineEdit()
         self.btnTest = QtGui.QPushButton("Button", self)
+        self.btnStop = QtGui.QPushButton("Stop", self)
         self.txtIntUrl = QtGui.QTextEdit()
         self.txtExtUrl = QtGui.QTextEdit()
         self.txtVisitedUrl = QtGui.QTextEdit()
@@ -43,14 +45,18 @@ class mainScreen(QtGui.QWidget, lists):
         grid.addWidget(self.btnTest,0,2)    
         grid.addWidget(self.txtExtUrl,1,0)
         grid.addWidget(self.txtIntUrl,1,1)
+        grid.addWidget(self.btnStop,1,2)
         grid.addWidget(self.txtVisitedUrl,2,0,1,2)
         self.setLayout(grid)
         self.btnTest.clicked.connect(self.buttonClicked)
+        self.btnStop.clicked.connect(self.buttonStop)
+
+    def buttonStop(self):
+        self.checker.terminate()
 
     def updateTxtIntUrl(self, text):
         print "the updateTxtIntUrl is ", text
         self.txtIntUrl.setText(str(text))
-
 
     def updateTxtExtUrl(self, text):
         print "the updateTxtExtUrl is ", text
@@ -90,11 +96,9 @@ class siteScraper(QtGui.QMainWindow, lists):
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit Application')
         exitAction.triggered.connect(QtGui.qApp.quit)
-
         menubar = self.menuBar()
         filemenu = menubar.addMenu('&File')
         filemenu = menubar.addAction(exitAction)
-
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         self.setToolTip('This is a <b>QWidget</b> widget')
         self.setWindowTitle('Scrapper')
@@ -138,9 +142,7 @@ class siteChecker(QtCore.QThread, QtCore.QObject, lists):
             print "number of external urls:", len(self.externalUrls)
             self.emit(QtCore.SIGNAL('txtIntUrl'), self.internalUrls)
             self.emit(QtCore.SIGNAL('txtExtUrl'), self.externalUrls)
-            self.emit(QtCore.SIGNAL('txtVisitedUrl'), self.visitedUrls)
-            #self.txtIntUrl.setText("test")            
-
+            self.emit(QtCore.SIGNAL('txtVisitedUrl'), self.visitedUrls)           
             if self.internalUrl not in self.visitedUrls:
                 self.webpage = self.internalUrl
                 self.check()

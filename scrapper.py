@@ -10,13 +10,26 @@ class lists():
     externalUrls = []
     internalUrls = []
     webpage = ""
+    currentUrl = ""
 
 class MyHTMLParser(HTMLParser, lists):
+
+    domain = ""
+
+    def setUrls(self, domain):
+        self.domain = domain
+
+    def isInternal(self, url):
+        if self.domain in url:
+            return True
+        else:
+            return False
+
     def handle_starttag(self, tag, attrs):
-        searchUrl = self.webpage.replace('http://www.', '')
         for attr in attrs:
             if attr[0] == "href":
-                if searchUrl in attr[1]:
+                print "ATTR[1] IS ", attr[1]
+                if self.isInternal(attr[1]):
                     if attr[1] not in self.internalUrls:
                         self.internalUrls.append(attr[1])
                 else:
@@ -55,15 +68,12 @@ class mainScreen(QtGui.QWidget, lists):
         self.checker.terminate()
 
     def updateTxtIntUrl(self, text):
-        print "the updateTxtIntUrl is ", text
         self.txtIntUrl.setText(str(text))
 
     def updateTxtExtUrl(self, text):
-        print "the updateTxtExtUrl is ", text
         self.txtExtUrl.setText(str(text))
 
     def updateTxtVisitedUrl(self, text):
-        print "the upadetTxtVisitedUrl is ", text
         self.txtVisitedUrl.setText(str(text))
 
     def buttonClicked(self):
@@ -114,24 +124,27 @@ class siteChecker(QtCore.QThread, QtCore.QObject, lists):
     def test(self, attr):
         print "test has run", attr
 
+    def url2check4(self):
+        return self.webpage.replace('http://www.', '')
+
+
     def check(self):
         h = httplib2.Http(".cache")
         h.force_exception_to_status_code = True
-        resp, content = h.request(self.webpage, "GET")
+        resp, content = h.request(self.currentUrl, "GET")
         print "resp is ", resp
         parser = MyHTMLParser()
+        parser.setUrls(self.url2check4())
         try:
             result = parser.feed(content)
             print "the result from feed in check function is ", result
         except:
             pass
-        self.visitedUrls.append(self.webpage)
-        print "here are the visited sites from in the check function ", self.visitedUrls
-        print "here are the internalUrls", self.internalUrls
-        print "here are the externalUrls", self.externalUrls
+        self.visitedUrls.append(self.currentUrl)
 
     def setSite(self, webpage):
         self.webpage = str(webpage)
+        self.currentUrl = str(webpage)
 
     def run(self):
         self.check()
@@ -144,7 +157,7 @@ class siteChecker(QtCore.QThread, QtCore.QObject, lists):
             self.emit(QtCore.SIGNAL('txtExtUrl'), self.externalUrls)
             self.emit(QtCore.SIGNAL('txtVisitedUrl'), self.visitedUrls)           
             if self.internalUrl not in self.visitedUrls:
-                self.webpage = self.internalUrl
+                self.currentUrl = self.internalUrl
                 self.check()
 
 def main():
